@@ -1,0 +1,55 @@
+pipeline {
+    agent {
+        kubernetes {
+            inheritFrom 'docker-image-pod'
+            defaultContainer 'buildkit'
+            yaml """
+                apiVersion: v1
+                kind: Pod
+                metadata:
+                  label:
+                    jenkins: docker-image-pod
+                spec:
+                  containers:
+                    - name: buildkit
+                      image: moby/buildkit:master
+                      tty: true
+                      securityContext:
+                        privileged: true
+                      volumeMounts:
+                        - name: docker-config
+                          mountPath: '/root/.docker'
+                  volumes:
+                    - name: docker-config
+                      secret:
+                        secretName: 'docker-config'
+                  restartPolicy: Never
+            """
+        }
+    }
+
+    parameters {
+        string(
+            name: 'registry',
+            defaultValue: 'registry.example.com:5000',
+            description: 'Container Registry'
+        )
+        string(
+            name: 'image_name',
+            defaultValue: 'schema-api',
+            description: 'schema-api image'
+        )
+    }
+    
+    stages {
+        stage('schema-api image: build & push') {
+            steps {
+                container('buildkit') {
+                    sh """
+                        buildctl build --frontend dockerfile.v0 --local context=. --local dockerfile=. --no-cache --output type=image,\\"name=${params.registry}/${params.image_name}:${BUILD_NUMBER},${params.registry}/${params.image_name}:latest\\",push=true --progress=plain
+                    """
+                 }
+            }
+        }
+    }
+}

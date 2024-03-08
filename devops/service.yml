@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: schemas
+  namespace: devops
+spec:
+  type: LoadBalancer
+  selector:
+    app: schema-api
+  ports:
+    - protocol: TCP
+      port: 8443
+      targetPort: 8443

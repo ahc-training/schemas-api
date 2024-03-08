@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: schema-api
+  namespace: devops
+spec:
+  selector:
+    matchLabels:
+      app: schema-api
+  serviceName: schemas
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: schema-api
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: schema-api
+          image: registry.example.com:5000/schema-api:latest
+          ports:
+            - containerPort: 8443
+              name: https-web
+          volumeMounts:
+            - name: database
+              mountPath: /app/sqlite
+  volumeClaimTemplates:
+    - metadata:
+        name: database
+      spec:
+        accessModes: 
+          - ReadWriteOnce
+        storageClassName: nfs-client
+        resources:
+          requests:
+            storage: 500Mi
